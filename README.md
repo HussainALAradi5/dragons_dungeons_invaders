@@ -94,6 +94,6 @@ npm run dev
 
 ##### 2. [Chakra UI](https://v2.chakra-ui.com/) for the nice UX and responisve UI🐲
 
-##### our nice website inspired by:The Populer classic Space Invaders game
+##### our nice game inspired by:The Populer classic Space Invaders game
 
 ---
