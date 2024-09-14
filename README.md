@@ -63,7 +63,7 @@ npm run dev
 
 ### UML Diagrams:
 
-#### [hierarchy]:TBA
+#### [hierarchy](./images/Dragons%20Dungeon%20Invaders.drawio.png)
 
 ---
 
