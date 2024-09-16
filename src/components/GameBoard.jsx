@@ -13,10 +13,10 @@ const GameBoard = () => {
   const [lives, setLives] = useState(10)
   const [dragonPosition, setDragonPosition] = useState(72)
   const [archersPositions, setArchersPositions] = useState([...Array(9).keys()])
-  const [projectiles, setProjectiles] = useState([]) // Player's fire
-  const [arrows, setArrows] = useState([]) // Archer's arrows
+  const [projectiles, setProjectiles] = useState([])
+  const [arrows, setArrows] = useState([])
   const [archerSpeed, setArcherSpeed] = useState(1000)
-  const [respawnQueue, setRespawnQueue] = useState([]) // Queue for respawning archers
+  const [respawnQueue, setRespawnQueue] = useState([])
 
   const toast = useToast()
 
@@ -25,39 +25,45 @@ const GameBoard = () => {
       case 'Easy':
         setLives(10)
         setArchersPositions([...Array(4).keys()])
-        setArcherSpeed(1000)
+        setArcherSpeed(2000)
         break
       case 'Normal':
         setLives(5)
         setArchersPositions([...Array(7).keys()])
-        setArcherSpeed(700)
+        setArcherSpeed(1600)
         break
       case 'Expert':
         setLives(3)
         setArchersPositions([...Array(9).keys()])
-        setArcherSpeed(500)
+        setArcherSpeed(1400)
         break
       default:
         break
     }
   }, [difficulty])
 
-  // Archer movement logic (moving left to right, row by row)
   useEffect(() => {
-    const interval = setInterval(() => {
+    const moveArchers = () => {
       setArchersPositions((prevPositions) => {
-        return prevPositions.map((pos) => {
-          const isEndOfRow = pos % 9 === 8 // Archer is at the end of the row
-          if (isEndOfRow) {
-            const nextPos = pos + 1 < 81 ? pos + 1 : pos % 9 // Move to the next row or wrap around
-            return nextPos
-          } else {
-            return pos + 1 // Move to the right within the same row
-          }
-        })
-      })
-    }, archerSpeed)
+        const updatedPositions = prevPositions.map((pos) => {
+          const rowIndex = Math.floor(pos / 9)
+          const colIndex = pos % 9
+          const newColIndex = colIndex + 1
 
+          if (newColIndex > 8) {
+            if (rowIndex + 1 >= 9) {
+              return rowIndex * 9
+            }
+            return (rowIndex + 1) * 9
+          }
+          return pos + 1
+        })
+
+        return updatedPositions
+      })
+    }
+
+    const interval = setInterval(moveArchers, archerSpeed)
     return () => clearInterval(interval)
   }, [archerSpeed])
 
@@ -85,63 +91,59 @@ const GameBoard = () => {
     }
   }
 
-  // Move projectiles (dragon's fire)
   useEffect(() => {
     const interval = setInterval(() => {
-      setProjectiles(
-        (prev) =>
-          prev
-            .map((p) => ({ ...p, position: p.position - 9 })) // Move upward
-            .filter((p) => p.position >= 0) // Remove off-screen projectiles
+      setProjectiles((prev) =>
+        prev
+          .map((p) => ({ ...p, position: p.position - 9 }))
+          .filter((p) => p.position >= 0)
       )
     }, 200)
     return () => clearInterval(interval)
   }, [])
 
-  // Move arrows (archers' arrows)
   useEffect(() => {
     const interval = setInterval(() => {
-      setArrows(
-        (prev) =>
-          prev
-            .map((a) => ({ ...a, position: a.position + 9 })) // Move downward
-            .filter((a) => a.position < 81) // Remove off-screen arrows
+      setArrows((prev) =>
+        prev
+          .map((a) => ({ ...a, position: a.position + 9 }))
+          .filter((a) => a.position < 81)
       )
     }, 300)
     return () => clearInterval(interval)
   }, [])
 
-  // Archer arrows fire logic
   useEffect(() => {
-    const interval = setInterval(() => {
+    const shootArrows = () => {
       setArrows((prevArrows) => [
         ...prevArrows,
         ...archersPositions.map((pos) => ({
-          position: pos,
+          position: pos + 9,
           id: Date.now() + pos
         }))
       ])
-    }, 2000) // Archers shoot every 2 seconds
-    return () => clearInterval(interval)
-  }, [archersPositions])
+    }
 
-  // Collision Detection and Respawn Logic
+    shootArrows()
+    const interval = setInterval(shootArrows, archerSpeed)
+    return () => clearInterval(interval)
+  }, [archersPositions, archerSpeed])
+
   useEffect(() => {
     setProjectiles((prevProjectiles) =>
       prevProjectiles.filter((p) => {
         const collision = archersPositions.includes(p.position)
         if (collision) {
-          setArchersPositions(
-            (prev) => prev.map((pos) => (pos === p.position ? -1 : pos)) // Temporarily set to -1 (archer defeated)
+          setArchersPositions((prev) =>
+            prev.map((pos) => (pos === p.position ? -1 : pos))
           )
-          setRespawnQueue((queue) => [...queue, { id: Date.now() }]) // Add to respawn queue
+          setRespawnQueue((queue) => [...queue, { id: Date.now() }])
           setEnemiesDefeated((prev) => prev + 1)
         }
         return !collision
       })
     )
 
-    // Check for collisions between arrows and the dragon
     setArrows((prevArrows) =>
       prevArrows.filter((a) => {
         const collision = a.position === dragonPosition
@@ -162,12 +164,9 @@ const GameBoard = () => {
       })
     )
 
-    // Respawn logic: Check if the first cell (index 0) is free
     if (!archersPositions.includes(0) && respawnQueue.length > 0) {
-      setArchersPositions(
-        (prev) => prev.map((pos) => (pos === -1 ? 0 : pos)) // Respawn at index 0 if available
-      )
-      setRespawnQueue((queue) => queue.slice(1)) // Remove the first archer from the queue
+      setArchersPositions((prev) => prev.map((pos) => (pos === -1 ? 0 : pos)))
+      setRespawnQueue((queue) => queue.slice(1))
     }
   }, [
     projectiles,
@@ -239,15 +238,19 @@ const GameBoard = () => {
                 <Archers iconSize={iconSize} />
               )}
               {projectiles.some((p) => p.position === index) && (
-                <FaFire color="red.500" fontSize={iconSize} />
+                <FaFire size={iconSize} color="red.500" />
               )}
               {arrows.some((a) => a.position === index) && (
-                <FaArrowDown color="blue.500" fontSize={iconSize} />
+                <FaArrowDown size={iconSize} color="blue.500" />
               )}
             </Box>
           ))}
         </Grid>
-        <ResultLogic lives={lives} enemiesDefeated={enemiesDefeated} />
+        <ResultLogic
+          enemiesDefeated={enemiesDefeated}
+          lives={lives}
+          difficulty={difficulty}
+        />
       </Box>
     </Box>
   )
