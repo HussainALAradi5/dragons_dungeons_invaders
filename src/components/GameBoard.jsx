@@ -1,16 +1,27 @@
 import { Box, Grid, useBreakpointValue } from '@chakra-ui/react'
-import { FaDragon, FaArrowAltCircleRight } from 'react-icons/fa'
-import { GiArcher } from 'react-icons/gi'
+import { useState } from 'react'
+import Dragon from './Dragon'
+import Archers from './Archers'
+import Difficulties from './Difficulties'
+import ResultLogic from './ResultLogic'
 
 const GameBoard = () => {
+  const [difficulty, setDifficulty] = useState('Easy')
+  const [enemiesDefeated, setEnemiesDefeated] = useState(0)
+  const [lives, setLives] = useState(10)
+
   const cellSize = useBreakpointValue({
-    base: '40px',
-    sm: '60px',
-    md: '80px',
-    lg: '100px'
+    base: '30px',
+    sm: '40px',
+    md: '50px',
+    lg: '60px'
   })
 
   const iconSize = `calc(${cellSize} * 0.45)`
+
+  const handleFire = () => {
+    console.log('Fire!')
+  }
 
   const outerBoxStyle = {
     width: '100vw',
@@ -22,50 +33,42 @@ const GameBoard = () => {
     overflow: 'hidden'
   }
 
-  const gridWrapperStyle = {
-    maxHeight: '80vh',
-    maxWidth: '90vw',
-    overflow: 'auto'
-  }
-
   const gridStyle = {
     gridTemplateColumns: `repeat(9, ${cellSize})`,
     gridTemplateRows: `repeat(9, ${cellSize})`,
     gap: useBreakpointValue({ base: '1px', md: '2px' }),
     bg: 'whiteAlpha.800',
-    padding: useBreakpointValue({ base: '2', md: '4' }),
+    padding: useBreakpointValue({ base: '1', md: '2' }),
     borderRadius: 'md',
-    boxShadow: 'md'
-  }
-
-  const cellStyle = {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    border: '1px solid',
-    borderColor: 'gray.300',
-    bg: 'gray.100',
-    borderRadius: 'md',
-    minWidth: cellSize,
-    minHeight: cellSize
+    boxShadow: 'md',
+    maxHeight: '90vh',
+    maxWidth: '90vw'
   }
 
   return (
     <Box sx={outerBoxStyle}>
-      <Box sx={gridWrapperStyle}>
+      <Box>
+        <Difficulties onSelectDifficulty={setDifficulty} />
         <Grid sx={gridStyle}>
           {[...Array(81)].map((_, index) => (
-            <Box key={index} sx={cellStyle}>
-              {index === 0 && <FaDragon color="red.500" fontSize={iconSize} />}
-              {index === 1 && (
-                <GiArcher color="green.500" fontSize={iconSize} />
+            <Box
+              key={index}
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              bg="gray.100"
+              borderRadius="md"
+              border="1px solid"
+              borderColor="gray.300"
+            >
+              {index === 72 && (
+                <Dragon iconSize={iconSize} onFire={handleFire} />
               )}
-              {index === 2 && (
-                <FaArrowAltCircleRight color="orange.500" fontSize={iconSize} />
-              )}
+              {index < 9 && <Archers iconSize={iconSize} position={index} />}
             </Box>
           ))}
         </Grid>
+        <ResultLogic lives={lives} enemiesDefeated={enemiesDefeated} />
       </Box>
     </Box>
   )
