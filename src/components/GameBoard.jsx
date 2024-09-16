@@ -16,6 +16,8 @@ const GameBoard = () => {
   const [projectiles, setProjectiles] = useState([]) // Player's fire
   const [arrows, setArrows] = useState([]) // Archer's arrows
   const [archerSpeed, setArcherSpeed] = useState(1000)
+  const [respawnQueue, setRespawnQueue] = useState([]) // Queue for respawning archers
+
   const toast = useToast()
 
   useEffect(() => {
@@ -123,19 +125,16 @@ const GameBoard = () => {
     return () => clearInterval(interval)
   }, [archersPositions])
 
-  // Collision Detection
+  // Collision Detection and Respawn Logic
   useEffect(() => {
-    // Check for collisions between projectiles and archers
     setProjectiles((prevProjectiles) =>
       prevProjectiles.filter((p) => {
         const collision = archersPositions.includes(p.position)
         if (collision) {
           setArchersPositions(
-            (prev) =>
-              prev.map((pos) =>
-                pos === p.position ? Math.floor(Math.random() * 9) : pos
-              ) // Respawn at a random position
+            (prev) => prev.map((pos) => (pos === p.position ? -1 : pos)) // Temporarily set to -1 (archer defeated)
           )
+          setRespawnQueue((queue) => [...queue, { id: Date.now() }]) // Add to respawn queue
           setEnemiesDefeated((prev) => prev + 1)
         }
         return !collision
@@ -162,7 +161,23 @@ const GameBoard = () => {
         return true
       })
     )
-  }, [projectiles, arrows, dragonPosition, archersPositions, lives, toast])
+
+    // Respawn logic: Check if the first cell (index 0) is free
+    if (!archersPositions.includes(0) && respawnQueue.length > 0) {
+      setArchersPositions(
+        (prev) => prev.map((pos) => (pos === -1 ? 0 : pos)) // Respawn at index 0 if available
+      )
+      setRespawnQueue((queue) => queue.slice(1)) // Remove the first archer from the queue
+    }
+  }, [
+    projectiles,
+    arrows,
+    dragonPosition,
+    archersPositions,
+    lives,
+    respawnQueue,
+    toast
+  ])
 
   const outerBoxStyle = {
     width: '100vw',
