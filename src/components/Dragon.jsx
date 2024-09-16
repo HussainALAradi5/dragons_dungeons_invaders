@@ -1,28 +1,25 @@
-import { Box } from '@chakra-ui/react'
-import { FaDragon } from 'react-icons/fa'
 import { useEffect } from 'react'
+import { FaDragon } from 'react-icons/fa'
 
 const Dragon = ({ iconSize, onFire, onMove }) => {
-  const handleKeyDown = (e) => {
-    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+  const handleKeyDown = (event) => {
+    if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
       onMove('left')
-    } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+    } else if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
       onMove('right')
-    } else if (e.key === ' ') {
+    } else if (event.key === ' ' || event.type === 'click') {
       onFire()
     }
   }
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [])
 
-  return (
-    <Box>
-      <FaDragon color="red.500" fontSize={iconSize} />
-    </Box>
-  )
+  return <FaDragon color="red.500" fontSize={iconSize} onClick={onFire} />
 }
 
 export default Dragon

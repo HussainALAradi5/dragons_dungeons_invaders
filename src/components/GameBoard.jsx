@@ -9,6 +9,7 @@ const GameBoard = () => {
   const [difficulty, setDifficulty] = useState('Easy')
   const [enemiesDefeated, setEnemiesDefeated] = useState(0)
   const [lives, setLives] = useState(10)
+  const [dragonPosition, setDragonPosition] = useState(72)
 
   const cellSize = useBreakpointValue({
     base: '30px',
@@ -21,6 +22,14 @@ const GameBoard = () => {
 
   const handleFire = () => {
     console.log('Fire!')
+  }
+
+  const handleMove = (direction) => {
+    if (direction === 'left' && dragonPosition % 9 !== 0) {
+      setDragonPosition(dragonPosition - 1)
+    } else if (direction === 'right' && dragonPosition % 9 !== 8) {
+      setDragonPosition(dragonPosition + 1)
+    }
   }
 
   const outerBoxStyle = {
@@ -61,8 +70,12 @@ const GameBoard = () => {
               border="1px solid"
               borderColor="gray.300"
             >
-              {index === 72 && (
-                <Dragon iconSize={iconSize} onFire={handleFire} />
+              {index === dragonPosition && (
+                <Dragon
+                  iconSize={iconSize}
+                  onFire={handleFire}
+                  onMove={handleMove}
+                />
               )}
               {index < 9 && <Archers iconSize={iconSize} position={index} />}
             </Box>
