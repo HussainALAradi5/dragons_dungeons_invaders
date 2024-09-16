@@ -3,19 +3,13 @@ import { FaHeart } from 'react-icons/fa'
 
 const ResultLogic = ({ lives, enemiesDefeated }) => {
   return (
-    <Box
-      display="flex"
-      justifyContent="space-between"
-      alignItems="center"
-      mt={4}
-    >
+    <Box display="flex" flexDirection="column" alignItems="center" mt={4}>
       <Box display="flex" alignItems="center">
-        <FaHeart color="red" />
-        <Text ml={2} fontSize="xl" color="white">
-          Lives: {lives}
-        </Text>
+        {Array.from({ length: lives }).map((_, index) => (
+          <FaHeart key={index} color="red" />
+        ))}
       </Box>
-      <Box>
+      <Box mt={2}>
         <Text fontSize="xl" color="white">
           Enemies Defeated: {enemiesDefeated}
         </Text>
