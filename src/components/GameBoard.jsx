@@ -4,6 +4,8 @@ import Dragon from './Dragon'
 import Archers from './Archers'
 import Difficulties from './Difficulties'
 import ResultLogic from './ResultLogic'
+import { FaFire } from 'react-icons/fa'
+import { FaArrowDown } from 'react-icons/fa'
 
 const GameBoard = () => {
   const [difficulty, setDifficulty] = useState('Easy')
@@ -11,8 +13,9 @@ const GameBoard = () => {
   const [lives, setLives] = useState(10)
   const [dragonPosition, setDragonPosition] = useState(72)
   const [archersPositions, setArchersPositions] = useState([...Array(9).keys()])
+  const [projectiles, setProjectiles] = useState([]) // Player's fire
+  const [arrows, setArrows] = useState([]) // Archer's arrows
   const [archerSpeed, setArcherSpeed] = useState(1000)
-
   const toast = useToast()
 
   useEffect(() => {
@@ -37,10 +40,19 @@ const GameBoard = () => {
     }
   }, [difficulty])
 
+  // Archer movement logic (moving left to right, row by row)
   useEffect(() => {
     const interval = setInterval(() => {
       setArchersPositions((prevPositions) => {
-        return prevPositions.map((pos) => (pos + 9 >= 81 ? pos % 9 : pos + 9))
+        return prevPositions.map((pos) => {
+          const isEndOfRow = pos % 9 === 8 // Archer is at the end of the row
+          if (isEndOfRow) {
+            const nextPos = pos + 1 < 81 ? pos + 1 : pos % 9 // Move to the next row or wrap around
+            return nextPos
+          } else {
+            return pos + 1 // Move to the right within the same row
+          }
+        })
       })
     }, archerSpeed)
 
@@ -57,7 +69,10 @@ const GameBoard = () => {
   const iconSize = `calc(${cellSize} * 0.45)`
 
   const handleFire = () => {
-    console.log('Fire!')
+    setProjectiles((prev) => [
+      ...prev,
+      { position: dragonPosition, id: Date.now() }
+    ])
   }
 
   const handleMove = (direction) => {
@@ -67,6 +82,87 @@ const GameBoard = () => {
       setDragonPosition(dragonPosition + 1)
     }
   }
+
+  // Move projectiles (dragon's fire)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProjectiles(
+        (prev) =>
+          prev
+            .map((p) => ({ ...p, position: p.position - 9 })) // Move upward
+            .filter((p) => p.position >= 0) // Remove off-screen projectiles
+      )
+    }, 200)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Move arrows (archers' arrows)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setArrows(
+        (prev) =>
+          prev
+            .map((a) => ({ ...a, position: a.position + 9 })) // Move downward
+            .filter((a) => a.position < 81) // Remove off-screen arrows
+      )
+    }, 300)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Archer arrows fire logic
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setArrows((prevArrows) => [
+        ...prevArrows,
+        ...archersPositions.map((pos) => ({
+          position: pos,
+          id: Date.now() + pos
+        }))
+      ])
+    }, 2000) // Archers shoot every 2 seconds
+    return () => clearInterval(interval)
+  }, [archersPositions])
+
+  // Collision Detection
+  useEffect(() => {
+    // Check for collisions between projectiles and archers
+    setProjectiles((prevProjectiles) =>
+      prevProjectiles.filter((p) => {
+        const collision = archersPositions.includes(p.position)
+        if (collision) {
+          setArchersPositions(
+            (prev) =>
+              prev.map((pos) =>
+                pos === p.position ? Math.floor(Math.random() * 9) : pos
+              ) // Respawn at a random position
+          )
+          setEnemiesDefeated((prev) => prev + 1)
+        }
+        return !collision
+      })
+    )
+
+    // Check for collisions between arrows and the dragon
+    setArrows((prevArrows) =>
+      prevArrows.filter((a) => {
+        const collision = a.position === dragonPosition
+        if (collision) {
+          setLives((prev) => prev - 1)
+          if (lives <= 1) {
+            toast({
+              title: 'Game Over',
+              status: 'error',
+              duration: 2000,
+              isClosable: true,
+              position: 'top'
+            })
+          }
+          return false
+        }
+        return true
+      })
+    )
+  }, [projectiles, arrows, dragonPosition, archersPositions, lives, toast])
 
   const outerBoxStyle = {
     width: '100vw',
@@ -126,6 +222,12 @@ const GameBoard = () => {
               )}
               {archersPositions.includes(index) && (
                 <Archers iconSize={iconSize} />
+              )}
+              {projectiles.some((p) => p.position === index) && (
+                <FaFire color="red.500" fontSize={iconSize} />
+              )}
+              {arrows.some((a) => a.position === index) && (
+                <FaArrowDown color="blue.500" fontSize={iconSize} />
               )}
             </Box>
           ))}
