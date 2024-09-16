@@ -1,5 +1,5 @@
-import { Box, Grid, useBreakpointValue } from '@chakra-ui/react'
-import { useState } from 'react'
+import { Box, Grid, useBreakpointValue, useToast } from '@chakra-ui/react'
+import { useState, useEffect } from 'react'
 import Dragon from './Dragon'
 import Archers from './Archers'
 import Difficulties from './Difficulties'
@@ -10,6 +10,42 @@ const GameBoard = () => {
   const [enemiesDefeated, setEnemiesDefeated] = useState(0)
   const [lives, setLives] = useState(10)
   const [dragonPosition, setDragonPosition] = useState(72)
+  const [archersPositions, setArchersPositions] = useState([...Array(9).keys()])
+  const [archerSpeed, setArcherSpeed] = useState(1000)
+
+  const toast = useToast()
+
+  useEffect(() => {
+    switch (difficulty) {
+      case 'Easy':
+        setLives(10)
+        setArchersPositions([...Array(4).keys()])
+        setArcherSpeed(1000)
+        break
+      case 'Normal':
+        setLives(5)
+        setArchersPositions([...Array(7).keys()])
+        setArcherSpeed(700)
+        break
+      case 'Expert':
+        setLives(3)
+        setArchersPositions([...Array(9).keys()])
+        setArcherSpeed(500)
+        break
+      default:
+        break
+    }
+  }, [difficulty])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setArchersPositions((prevPositions) => {
+        return prevPositions.map((pos) => (pos + 9 >= 81 ? pos % 9 : pos + 9))
+      })
+    }, archerSpeed)
+
+    return () => clearInterval(interval)
+  }, [archerSpeed])
 
   const cellSize = useBreakpointValue({
     base: '30px',
@@ -57,7 +93,18 @@ const GameBoard = () => {
   return (
     <Box sx={outerBoxStyle}>
       <Box>
-        <Difficulties onSelectDifficulty={setDifficulty} />
+        <Difficulties
+          onSelectDifficulty={(level) => {
+            setDifficulty(level)
+            toast({
+              title: `Difficulty set to ${level}`,
+              status: 'success',
+              duration: 2000,
+              isClosable: true,
+              position: 'top'
+            })
+          }}
+        />
         <Grid sx={gridStyle}>
           {[...Array(81)].map((_, index) => (
             <Box
@@ -77,7 +124,9 @@ const GameBoard = () => {
                   onMove={handleMove}
                 />
               )}
-              {index < 9 && <Archers iconSize={iconSize} position={index} />}
+              {archersPositions.includes(index) && (
+                <Archers iconSize={iconSize} />
+              )}
             </Box>
           ))}
         </Grid>
