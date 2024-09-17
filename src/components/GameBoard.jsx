@@ -1,48 +1,85 @@
-import { Box, Grid, useBreakpointValue, useToast } from '@chakra-ui/react'
+import { Box, Grid, useBreakpointValue, useToast, Text } from '@chakra-ui/react'
 import { useState, useEffect } from 'react'
 import Dragon from './Dragon'
 import Archers from './Archers'
 import Difficulties from './Difficulties'
 import ResultLogic from './ResultLogic'
-import { FaFire } from 'react-icons/fa'
-import { FaArrowDown } from 'react-icons/fa'
+import { FaFire, FaArrowDown } from 'react-icons/fa'
 
 const GameBoard = () => {
-  const [difficulty, setDifficulty] = useState('Easy')
+  const [difficulty, setDifficulty] = useState(null)
   const [enemiesDefeated, setEnemiesDefeated] = useState(0)
-  const [lives, setLives] = useState(10)
+  const [lives, setLives] = useState(0)
   const [dragonPosition, setDragonPosition] = useState(72)
-  const [archersPositions, setArchersPositions] = useState([...Array(9).keys()])
+  const [archersPositions, setArchersPositions] = useState([])
   const [projectiles, setProjectiles] = useState([])
   const [arrows, setArrows] = useState([])
-  const [archerSpeed, setArcherSpeed] = useState(1000)
+  const [archerSpeed, setArcherSpeed] = useState(0)
   const [respawnQueue, setRespawnQueue] = useState([])
+  const [countdown, setCountdown] = useState(5)
+  const [gameStarted, setGameStarted] = useState(false)
 
   const toast = useToast()
 
+  const resetGame = () => {
+    setDifficulty(null)
+    setLives(0)
+    setDragonPosition(72)
+    setArchersPositions([])
+    setProjectiles([])
+    setArrows([])
+    setArcherSpeed(0)
+    setRespawnQueue([])
+    setCountdown(5)
+    setGameStarted(false)
+    setEnemiesDefeated(0)
+  }
+
   useEffect(() => {
-    switch (difficulty) {
-      case 'Easy':
-        setLives(10)
-        setArchersPositions([...Array(4).keys()])
-        setArcherSpeed(2000)
-        break
-      case 'Normal':
-        setLives(5)
-        setArchersPositions([...Array(7).keys()])
-        setArcherSpeed(1600)
-        break
-      case 'Expert':
-        setLives(3)
-        setArchersPositions([...Array(9).keys()])
-        setArcherSpeed(1400)
-        break
-      default:
-        break
+    if (difficulty) {
+      setGameStarted(false)
+      setCountdown(5)
     }
   }, [difficulty])
 
   useEffect(() => {
+    if (countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => prev - 1)
+      }, 1000)
+      return () => clearInterval(timer)
+    } else if (countdown === 0) {
+      setGameStarted(true)
+    }
+  }, [countdown])
+
+  useEffect(() => {
+    if (gameStarted) {
+      switch (difficulty) {
+        case 'Easy':
+          setLives(10)
+          setArchersPositions([...Array(4).keys()])
+          setArcherSpeed(2300)
+          break
+        case 'Normal':
+          setLives(5)
+          setArchersPositions([...Array(7).keys()])
+          setArcherSpeed(2100)
+          break
+        case 'Expert':
+          setLives(3)
+          setArchersPositions([...Array(9).keys()])
+          setArcherSpeed(1950)
+          break
+        default:
+          break
+      }
+    }
+  }, [gameStarted, difficulty])
+
+  useEffect(() => {
+    if (!gameStarted) return
+
     const moveArchers = () => {
       setArchersPositions((prevPositions) => {
         const updatedPositions = prevPositions.map((pos) => {
@@ -65,7 +102,7 @@ const GameBoard = () => {
 
     const interval = setInterval(moveArchers, archerSpeed)
     return () => clearInterval(interval)
-  }, [archerSpeed])
+  }, [archerSpeed, gameStarted])
 
   const cellSize = useBreakpointValue({
     base: '30px',
@@ -92,28 +129,34 @@ const GameBoard = () => {
   }
 
   useEffect(() => {
+    if (!gameStarted) return
+
     const interval = setInterval(() => {
       setProjectiles((prev) =>
         prev
           .map((p) => ({ ...p, position: p.position - 9 }))
           .filter((p) => p.position >= 0)
       )
-    }, 200)
+    }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [gameStarted])
 
   useEffect(() => {
+    if (!gameStarted) return
+
     const interval = setInterval(() => {
       setArrows((prev) =>
         prev
           .map((a) => ({ ...a, position: a.position + 9 }))
           .filter((a) => a.position < 81)
       )
-    }, 300)
+    }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [gameStarted])
 
   useEffect(() => {
+    if (!gameStarted) return
+
     const shootArrows = () => {
       setArrows((prevArrows) => [
         ...prevArrows,
@@ -127,9 +170,11 @@ const GameBoard = () => {
     shootArrows()
     const interval = setInterval(shootArrows, archerSpeed)
     return () => clearInterval(interval)
-  }, [archersPositions, archerSpeed])
+  }, [archersPositions, archerSpeed, gameStarted])
 
   useEffect(() => {
+    if (!gameStarted) return
+
     setProjectiles((prevProjectiles) =>
       prevProjectiles.filter((p) => {
         const collision = archersPositions.includes(p.position)
@@ -153,10 +198,10 @@ const GameBoard = () => {
             toast({
               title: 'Game Over',
               status: 'error',
-              duration: 2000,
               isClosable: true,
               position: 'top'
             })
+            resetGame()
           }
           return false
         }
@@ -164,9 +209,27 @@ const GameBoard = () => {
       })
     )
 
-    if (!archersPositions.includes(0) && respawnQueue.length > 0) {
-      setArchersPositions((prev) => prev.map((pos) => (pos === -1 ? 0 : pos)))
-      setRespawnQueue((queue) => queue.slice(1))
+    if (archersPositions.filter((pos) => pos === -1).length > 0) {
+      setArchersPositions((prev) => {
+        const numRequired =
+          difficulty === 'Easy' ? 3 : difficulty === 'Normal' ? 5 : 7
+        const numCurrent = prev.filter((pos) => pos >= 0).length
+
+        if (numCurrent < numRequired) {
+          let updatedPositions = [...prev]
+          const firstEmptyIndex = updatedPositions.indexOf(-1)
+
+          if (firstEmptyIndex !== -1) {
+            updatedPositions[firstEmptyIndex] = 0
+          } else {
+            updatedPositions = updatedPositions.map((pos, index) =>
+              pos === -1 ? 0 : pos
+            )
+          }
+          return updatedPositions
+        }
+        return prev
+      })
     }
   }, [
     projectiles,
@@ -175,7 +238,9 @@ const GameBoard = () => {
     archersPositions,
     lives,
     respawnQueue,
-    toast
+    toast,
+    gameStarted,
+    difficulty
   ])
 
   const outerBoxStyle = {
@@ -202,56 +267,72 @@ const GameBoard = () => {
 
   return (
     <Box sx={outerBoxStyle}>
-      <Box>
-        <Difficulties
-          onSelectDifficulty={(level) => {
-            setDifficulty(level)
-            toast({
-              title: `Difficulty set to ${level}`,
-              status: 'success',
-              duration: 2000,
-              isClosable: true,
-              position: 'top'
-            })
-          }}
-        />
-        <Grid sx={gridStyle}>
-          {[...Array(81)].map((_, index) => (
+      {!gameStarted ? (
+        <Box>
+          {!difficulty && (
+            <Difficulties
+              onSelectDifficulty={(level) => {
+                setDifficulty(level)
+              }}
+            />
+          )}
+          {difficulty && countdown > 0 && (
             <Box
-              key={index}
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              bg="gray.100"
+              position="absolute"
+              top="50%"
+              left="50%"
+              transform="translate(-50%, -50%)"
+              bg="rgba(0, 0, 0, 0.7)"
+              color="white"
+              p="4"
               borderRadius="md"
-              border="1px solid"
-              borderColor="gray.300"
+              textAlign="center"
+              fontSize="4xl"
             >
-              {index === dragonPosition && (
-                <Dragon
-                  iconSize={iconSize}
-                  onFire={handleFire}
-                  onMove={handleMove}
-                />
-              )}
-              {archersPositions.includes(index) && (
-                <Archers iconSize={iconSize} />
-              )}
-              {projectiles.some((p) => p.position === index) && (
-                <FaFire size={iconSize} color="red.500" />
-              )}
-              {arrows.some((a) => a.position === index) && (
-                <FaArrowDown size={iconSize} color="blue.500" />
-              )}
+              {countdown}
             </Box>
-          ))}
-        </Grid>
-        <ResultLogic
-          enemiesDefeated={enemiesDefeated}
-          lives={lives}
-          difficulty={difficulty}
-        />
-      </Box>
+          )}
+        </Box>
+      ) : (
+        <Box>
+          <Grid sx={gridStyle}>
+            {[...Array(81)].map((_, index) => (
+              <Box
+                key={index}
+                display="flex"
+                justifyContent="center"
+                alignItems="center"
+                bg="gray.100"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="gray.300"
+              >
+                {index === dragonPosition && (
+                  <Dragon
+                    iconSize={iconSize}
+                    onFire={handleFire}
+                    onMove={handleMove}
+                  />
+                )}
+                {archersPositions.includes(index) && (
+                  <Archers iconSize={iconSize} />
+                )}
+                {projectiles.some((p) => p.position === index) && (
+                  <FaFire size={iconSize} color="red.500" />
+                )}
+                {arrows.some((a) => a.position === index) && (
+                  <FaArrowDown size={iconSize} color="blue.500" />
+                )}
+              </Box>
+            ))}
+          </Grid>
+          <ResultLogic
+            enemiesDefeated={enemiesDefeated}
+            lives={lives}
+            difficulty={difficulty}
+          />
+        </Box>
+      )}
     </Box>
   )
 }
