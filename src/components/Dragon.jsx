@@ -19,7 +19,7 @@ const Dragon = ({ iconSize, onFire, onMove }) => {
     }
   }, [])
 
-  return <FaDragon color="red.500" fontSize={iconSize} onClick={onFire} />
+  return <FaDragon color="red" fontSize={iconSize} onClick={onFire} />
 }
 
 export default Dragon

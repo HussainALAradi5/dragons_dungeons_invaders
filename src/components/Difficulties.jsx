@@ -11,7 +11,7 @@ const Difficulties = ({ onSelectDifficulty }) => {
       position: 'top-right',
       duration: 2000,
       isClosable: true,
-      colorScheme: 'blue'
+      colorScheme: 'green'
     })
   }
 
