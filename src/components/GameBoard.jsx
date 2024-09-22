@@ -312,10 +312,10 @@ const GameBoard = () => {
                   <Archers iconSize={iconSize} />
                 )}
                 {projectiles.some((p) => p.position === index) && (
-                  <FaFire size={iconSize} color="red.500" />
+                  <FaFire size={iconSize} color="red" />
                 )}
                 {arrows.some((a) => a.position === index) && (
-                  <FaArrowDown size={iconSize} color="blue.500" />
+                  <FaArrowDown size={iconSize} color="gray" />
                 )}
               </Box>
             ))}
