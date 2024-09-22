@@ -55,17 +55,17 @@ const GameBoard = () => {
       switch (difficulty) {
         case 'Easy':
           setLives(10)
-          setArchersPositions([...Array(4).keys()])
+          setArchersPositions([...Array(3).keys()])
           setArcherSpeed(2300)
           break
         case 'Normal':
           setLives(5)
-          setArchersPositions([...Array(7).keys()])
+          setArchersPositions([...Array(4).keys()])
           setArcherSpeed(2100)
           break
         case 'Expert':
           setLives(3)
-          setArchersPositions([...Array(9).keys()])
+          setArchersPositions([...Array(6).keys()])
           setArcherSpeed(1950)
           break
         default:
@@ -208,7 +208,7 @@ const GameBoard = () => {
     if (archersPositions.filter((pos) => pos === -1).length > 0) {
       setArchersPositions((prev) => {
         const numRequired =
-          difficulty === 'Easy' ? 3 : difficulty === 'Normal' ? 5 : 7
+          difficulty === 'Easy' ? 3 : difficulty === 'Normal' ? 5 : 6
         const numCurrent = prev.filter((pos) => pos >= 0).length
 
         if (numCurrent < numRequired) {
