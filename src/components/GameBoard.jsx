@@ -1,4 +1,4 @@
-import { Box, Grid, useBreakpointValue, useToast, Text } from '@chakra-ui/react'
+import { Box, Grid, useBreakpointValue, useToast } from '@chakra-ui/react'
 import { useState, useEffect } from 'react'
 import Dragon from './Dragon'
 import Archers from './Archers'
@@ -15,10 +15,8 @@ const GameBoard = () => {
   const [projectiles, setProjectiles] = useState([])
   const [arrows, setArrows] = useState([])
   const [archerSpeed, setArcherSpeed] = useState(0)
-  const [respawnQueue, setRespawnQueue] = useState([])
   const [countdown, setCountdown] = useState(5)
   const [gameStarted, setGameStarted] = useState(false)
-
   const toast = useToast()
 
   const resetGame = () => {
@@ -29,7 +27,6 @@ const GameBoard = () => {
     setProjectiles([])
     setArrows([])
     setArcherSpeed(0)
-    setRespawnQueue([])
     setCountdown(5)
     setGameStarted(false)
     setEnemiesDefeated(0)
@@ -48,10 +45,10 @@ const GameBoard = () => {
         setCountdown((prev) => prev - 1)
       }, 1000)
       return () => clearInterval(timer)
-    } else if (countdown === 0) {
+    } else if (countdown === 0 && difficulty) {
       setGameStarted(true)
     }
-  }, [countdown])
+  }, [countdown, difficulty])
 
   useEffect(() => {
     if (gameStarted) {
@@ -182,7 +179,6 @@ const GameBoard = () => {
           setArchersPositions((prev) =>
             prev.map((pos) => (pos === p.position ? -1 : pos))
           )
-          setRespawnQueue((queue) => [...queue, { id: Date.now() }])
           setEnemiesDefeated((prev) => prev + 1)
         }
         return !collision
@@ -222,7 +218,7 @@ const GameBoard = () => {
           if (firstEmptyIndex !== -1) {
             updatedPositions[firstEmptyIndex] = 0
           } else {
-            updatedPositions = updatedPositions.map((pos, index) =>
+            updatedPositions = updatedPositions.map((pos) =>
               pos === -1 ? 0 : pos
             )
           }
@@ -237,8 +233,6 @@ const GameBoard = () => {
     dragonPosition,
     archersPositions,
     lives,
-    respawnQueue,
-    toast,
     gameStarted,
     difficulty
   ])

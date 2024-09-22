@@ -10,7 +10,8 @@ const Difficulties = ({ onSelectDifficulty }) => {
       status: 'success',
       position: 'top-right',
       duration: 2000,
-      isClosable: true
+      isClosable: true,
+      colorScheme: 'blue'
     })
   }
 
