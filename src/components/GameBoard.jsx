@@ -66,7 +66,7 @@ const GameBoard = () => {
         case 'Expert':
           setLives(3)
           setArchersPositions([...Array(6).keys()])
-          setArcherSpeed(1950)
+          setArcherSpeed(2000)
           break
         default:
           break
